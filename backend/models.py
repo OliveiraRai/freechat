@@ -23,20 +23,25 @@ class User(BaseUser, table=True):
     id: Optional[int] = Field(default=None, sa_column=sa.Column(sa.Integer, primary_key=True))
     
 class BaseChat(SQLModel):
-    code: str = Field(max_length=8, default_factory=generate_unique_code, unique=True)
     host_id: int = Field(foreign_key="users.id")
     # ao criar um chat, ele já começa sem um guest, por isso Optional e default
-    guest_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    code: str = Field(max_length=8, default_factory=generate_unique_code, unique=True)
     
 class ChatCreate(BaseChat):
     pass 
 
+class ChatJoin(SQLModel):
+    code: int
+    guest_id: int
+
 class ChatRead(BaseChat):
     id: int 
+    guest_id: Optional[int] = None
 
 class Chat(BaseChat, table=True):
     __tablename__ = "chats"
     id: Optional[int] = Field(default=None, sa_column=sa.Column(sa.Integer, primary_key=True))
+    guest_id: Optional[int] = Field(default=None, foreign_key="users.id")
     
 class Message(SQLModel, table=True):
     __tablename__ = "messages"
