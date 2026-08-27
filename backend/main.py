@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # creates user instance/object
-@app.post('/user/create', response_model=models.UserRead, status_code=status.HTTP_201_CREATED)
+@app.post('/api/user/create', response_model=models.UserRead, status_code=status.HTTP_201_CREATED)
 def CreateUser(user: models.UserCreate, session: Session = Depends(get_session)):
     query = select(models.User).where(models.User.name == user.name)
     existing_user = session.exec(query).first() 
@@ -31,7 +31,7 @@ def CreateUser(user: models.UserCreate, session: Session = Depends(get_session))
     return db_user
 
 # creates chat instance/object
-@app.post('/chat/create', response_model=models.ChatRead, status_code=status.HTTP_201_CREATED)
+@app.post('/api/chat/create', response_model=models.ChatRead, status_code=status.HTTP_201_CREATED)
 def CreateChat(chat: models.ChatCreate, session: Session = Depends(get_session)):
     # verifica se o usuário existe
     db_user = session.get(models.User, chat.host_id)
@@ -57,7 +57,7 @@ def CreateChat(chat: models.ChatCreate, session: Session = Depends(get_session))
     
     return db_chat
 
-@app.post("/chat/join", response_model=models.ChatRead, status_code=status.HTTP_200_OK)
+@app.post("/api/chat/join", response_model=models.ChatRead, status_code=status.HTTP_200_OK)
 def ChatJoin(chat_data: models.ChatJoin, session: Session = Depends(get_session)):
     query = select(models.Chat).where(models.Chat.code == chat_data.code)
     chat = session.exec(query).first()
@@ -71,7 +71,7 @@ def ChatJoin(chat_data: models.ChatJoin, session: Session = Depends(get_session)
     session.refresh(chat)
     return chat
 
-@app.delete('/chat/{chat_id}', status_code=status.HTTP_204_NO_CONTENT)
+@app.delete('/api/chat/{chat_id}', status_code=status.HTTP_204_NO_CONTENT)
 def DeleteChat(chat_id: int, session: Session = Depends(get_session)):
     # busca pelo id
     chat = session.get(models.Chat, chat_id)
