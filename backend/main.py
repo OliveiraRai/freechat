@@ -71,6 +71,18 @@ def ChatJoin(chat_data: models.ChatJoin, session: Session = Depends(get_session)
     session.refresh(chat)
     return chat
 
+@app.delete('/chat/{chat_id}', status_code=status.HTTP_204_NO_CONTENT)
+def DeleteChat(chat_id: int, session: Session = Depends(get_session)):
+    # busca pelo id
+    chat = session.get(models.Chat, chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat already deleted.")
+    # apaga instância
+    session.delete(chat)
+    session.commit()
+    # como o status é 204, o retorno pode ser None
+    return None
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
