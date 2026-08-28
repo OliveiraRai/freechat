@@ -1,8 +1,10 @@
 import { useState } from "react"
 import { Button } from "../components/Button"
 import { TextInput } from "../components/Input"
+import { useNavigate } from "react-router-dom"
 
 export function CreateUser(){
+    const navigate = useNavigate()
     const[nickname, setNickname] = useState("")
 
     const handleChange = (e) => {
@@ -22,7 +24,7 @@ export function CreateUser(){
             })
             const user = await response.json()
             sessionStorage.setItem('user_id', user.id)
-            window.location.href = '/create'
+            navigate('/create')
         } catch(err) {
             console.log("Error: ", err)
         }

@@ -14,6 +14,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# checks if code exists
+@app.get('/api/chat/chat-check/{code}')
+def CheckChatCode(code: str, session: Session = Depends(get_session)):
+    query = select(models.Chat).where(models.Chat.code == code)
+    chat_exists = session.exec(query).first()
+    if chat_exists:
+        return {
+            "exists": True,
+            "guest": chat_exists.guest_id,
+        }
+    return {
+        "exists": False,
+    }
+
 # creates user instance/object
 @app.post('/api/user/create', response_model=models.UserRead, status_code=status.HTTP_201_CREATED)
 def CreateUser(user: models.UserCreate, session: Session = Depends(get_session)):
@@ -71,10 +85,10 @@ def ChatJoin(chat_data: models.ChatJoin, session: Session = Depends(get_session)
     session.refresh(chat)
     return chat
 
-@app.delete('/api/chat/{chat_id}', status_code=status.HTTP_204_NO_CONTENT)
-def DeleteChat(chat_id: int, session: Session = Depends(get_session)):
+@app.delete('/api/chat/{chat_code}', status_code=status.HTTP_204_NO_CONTENT)
+def DeleteChat(chat_code: int, session: Session = Depends(get_session)):
     # busca pelo id
-    chat = session.get(models.Chat, chat_id)
+    chat = session.get(models.Chat, chat_code)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat already deleted.")
     # apaga instância

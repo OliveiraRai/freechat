@@ -1,10 +1,59 @@
 import { Button } from "../components/Button"
+import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from "react"
 
 export function CreateChat(){
+    const navigate = useNavigate()
+    const[userId, setUserId] = useState(null)
+
+    useEffect(() => {
+        const user_id = sessionStorage.getItem('user_id') // pega o id que veio de '/'
+        if(user_id){
+            setUserId(user_id); // salva no state
+        } else {
+            console.log("Failed to grab user id.")
+            navigate('/') // redireciona de volta
+        }
+    }, [navigate])
+
+    const handleCreateChat = async () => {
+        if(!userId) return;
+        try {
+            const response = await fetch('/api/chat/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    'host_id': userId,
+                }),
+            });
+            if(!response.ok) throw new Error("Error while creating chat.")
+        
+            const data = await response.json();
+            sessionStorage.setItem('chat_code', data.code);
+            sessionStorage.removeItem('user_id');
+            // envia para o chat TODO criar layout chat
+            navigate(`/chat/${data.code}`)
+        } catch(err) {
+            console.log("Error: ", err);
+        }
+    };
+
+    const handleRedirect = () => {
+        navigate('/join')
+    };
+
     return (
         <>
-            <Button text={"Create Chat"}/>
-            <Button text={"Join Chat"}/>
+            <Button 
+                text={"Create Chat"}
+                onClick={handleCreateChat}
+                />
+            <Button 
+                text={"Join Chat"}
+                onClick={handleRedirect} 
+                />
         </>
     )
 }

@@ -36,7 +36,8 @@ class ChatJoin(SQLModel):
 
 class ChatRead(BaseChat):
     id: int 
-    guest_id: Optional[int] = None
+    guest_id: Optional[int] = None  
+    code: Optional[str] = None
 
 class Chat(BaseChat, table=True):
     __tablename__ = "chats"
