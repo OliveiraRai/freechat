@@ -1,6 +1,6 @@
 export function NavBar() {
     return (
-        <nav className="flex justify-between mt-5">
+        <nav className="flex justify-between mt-5 px-4">
             <img 
                 src="/freechat-logo.png" 
                 alt="App Logo" 
