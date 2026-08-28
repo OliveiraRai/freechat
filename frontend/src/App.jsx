@@ -1,14 +1,20 @@
 import { useState } from 'react'
 import { BrowserRouter, Router, Routes, Route, Link, Outlet } from 'react-router-dom'
-import './App.css'
+import { BaseLayout } from './layouts/BaseLayout'
+import { CreateUser } from './pages/CreateUser'
+import { CreateChat } from './pages/CreateChat'
+import { JoinChat } from './pages/JoinChat'
+import './index.css'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route path='/' element={<h1>Esta é a página principal.</h1>}/>
+        <Route path='/' element={<BaseLayout/>}>
+          <Route index element={<CreateUser/>}/>
+          <Route path='/create' element={<CreateChat/>}/>
+          <Route path='/join' element={<JoinChat/>}/>
+        </Route>
       </Routes>
     </BrowserRouter>
   )
