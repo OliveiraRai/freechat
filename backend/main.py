@@ -1,9 +1,8 @@
 import models
 from fastapi import FastAPI, Depends, status, HTTPException
 from contextlib import asynccontextmanager
-from database import create_db_and_tables, get_session, engine
-from sqlalchemy.orm import Session 
-from sqlalchemy import select
+from database import create_db_and_tables, get_session
+from sqlmodel import Session, select 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -14,21 +13,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# checks if code exists
-@app.get('/api/chat/chat-check/{code}')
-def CheckChatCode(code: str, session: Session = Depends(get_session)):
-    query = select(models.Chat).where(models.Chat.code == code)
-    chat_exists = session.exec(query).first()
-    if chat_exists:
-        return {
-            "exists": True,
-            "guest": chat_exists.guest_id,
-        }
-    return {
-        "exists": False,
-    }
-
-# creates user instance/object
 @app.post('/api/user/create', response_model=models.UserRead, status_code=status.HTTP_201_CREATED)
 def CreateUser(user: models.UserCreate, session: Session = Depends(get_session)):
     query = select(models.User).where(models.User.name == user.name)
@@ -44,17 +28,14 @@ def CreateUser(user: models.UserCreate, session: Session = Depends(get_session))
     session.refresh(db_user)
     return db_user
 
-# creates chat instance/object
 @app.post('/api/chat/create', response_model=models.ChatRead, status_code=status.HTTP_201_CREATED)
 def CreateChat(chat: models.ChatCreate, session: Session = Depends(get_session)):
-    # verifica se o usuário existe
     db_user = session.get(models.User, chat.host_id)
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found.")
     
-    # valida se o usuário já possui um chat aberto
     query = select(models.Chat).where(models.Chat.host_id == chat.host_id)
-    existing_chat = session.exec(query).first() # busca o primeiro que encontrar
+    existing_chat = session.exec(query).first()
 
     if existing_chat:
         raise HTTPException(
@@ -62,39 +43,38 @@ def CreateChat(chat: models.ChatCreate, session: Session = Depends(get_session))
             detail="User already has a chat room."
         )
         
-    # se passou, cria o chat
     db_chat = models.Chat.model_validate(chat)
-    
     session.add(db_chat)
     session.commit()
     session.refresh(db_chat)
-    
     return db_chat
 
 @app.post("/api/chat/join", response_model=models.ChatRead, status_code=status.HTTP_200_OK)
 def ChatJoin(chat_data: models.ChatJoin, session: Session = Depends(get_session)):
     query = select(models.Chat).where(models.Chat.code == chat_data.code)
     chat = session.exec(query).first()
+    
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found.")
     if chat.guest_id is not None:
         raise HTTPException(status_code=403, detail="Chat is already full or expired.")
+        
     chat.guest_id = chat_data.guest_id
+    chat.code = None 
+    
     session.add(chat)
     session.commit()
     session.refresh(chat)
     return chat
 
-@app.delete('/api/chat/{chat_code}', status_code=status.HTTP_204_NO_CONTENT)
-def DeleteChat(chat_code: int, session: Session = Depends(get_session)):
-    # busca pelo id
-    chat = session.get(models.Chat, chat_code)
+@app.delete('/api/chat/{chat_id}', status_code=status.HTTP_204_NO_CONTENT)
+def DeleteChat(chat_id: int, session: Session = Depends(get_session)):
+    chat = session.get(models.Chat, chat_id)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat already deleted.")
-    # apaga instância
+        
     session.delete(chat)
     session.commit()
-    # como o status é 204, o retorno pode ser None
     return None
 
 if __name__ == "__main__":

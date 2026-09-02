@@ -4,6 +4,8 @@ import { BaseLayout } from './layouts/BaseLayout'
 import { CreateUser } from './pages/CreateUser'
 import { CreateChat } from './pages/CreateChat'
 import { JoinChat } from './pages/JoinChat'
+import { Chat } from './pages/Chat'
+
 import './index.css'
 
 function App() {
@@ -15,6 +17,7 @@ function App() {
           <Route path='/create' element={<CreateChat/>}/>
           <Route path='/join' element={<JoinChat/>}/>
         </Route>
+        <Route path='/chat' element={<Chat/>}/>
       </Routes>
     </BrowserRouter>
   )

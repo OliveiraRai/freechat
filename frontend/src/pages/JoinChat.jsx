@@ -13,14 +13,20 @@ export function JoinChat(){
 
     const handleJoinChat = async () => {
         try {
-            const response = await fetch(`/api/chat/chat-check/${chatCode}`)
+            const response = await fetch(`/api/chat/join`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    code: chatCode,
+                    guest_id: sessionStorage.getItem('user_id')
+                }),
+            })
             if(!response.ok) throw new Error("Error communicating with server.")
-            const data = await response.json()
-            if(data.exists && !data.guest_id){
-                navigate(`/chat/${chatCode}`)
-            } else {
-                console.log("Invalid chat or chat already full.")
-            }
+            const data = response.json()
+            sessionStorage.setItem('chat_id', data.id)
+            navigate('/chat')
         } catch(err) {
             console.log("Error: ", err)
         }

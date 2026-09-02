@@ -19,7 +19,7 @@ export function CreateUser(){
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    'name': nickname
+                    name: nickname
                 })
             })
             const user = await response.json()
