@@ -36,7 +36,7 @@ class ChatJoin(SQLModel):
 
 class ChatRead(SQLModel):
     id: int 
-    host_id = int
+    host_id: int
     guest_id: Optional[int] = None 
     code: Optional[str] = None
 

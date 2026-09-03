@@ -1,8 +1,10 @@
 import models
 from fastapi import FastAPI, Depends, status, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import create_db_and_tables, get_session
 from sqlmodel import Session, select 
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -12,6 +14,14 @@ async def lifespan(app: FastAPI):
     print("Shutting down...")
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post('/api/user/create', response_model=models.UserRead, status_code=status.HTTP_201_CREATED)
 def CreateUser(user: models.UserCreate, session: Session = Depends(get_session)):
@@ -27,6 +37,13 @@ def CreateUser(user: models.UserCreate, session: Session = Depends(get_session))
     session.commit()
     session.refresh(db_user)
     return db_user
+
+@app.get('api/user/{user_id}', status_code=status.HTTP_200_OK)
+def getUserName(user_id: int, session: Session = Depends(get_session)):
+    user_name = session.get(models.User.name, user_id)
+    if not user_name:
+        raise HTTPException(status_code=404, detail="User name not found.")
+    return {"user_name": user_name}
 
 @app.post('/api/chat/create', response_model=models.ChatRead, status_code=status.HTTP_201_CREATED)
 def CreateChat(chat: models.ChatCreate, session: Session = Depends(get_session)):
