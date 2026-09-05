@@ -1,10 +1,9 @@
 import models
-from fastapi import FastAPI, Depends, status, HTTPException
+from fastapi import FastAPI, Depends, status, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import create_db_and_tables, get_session
 from sqlmodel import Session, select 
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,10 +17,41 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: str):
+        for connection in list(self.active_connections):
+            try:
+                await connection.send_text(message)
+            except Exception:
+                self.disconnect(connection)
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/chat/{chat_id}")
+async def websocket_endpoint(websocket: WebSocket, chat_id: int, userId: int):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await manager.broadcast(data)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 @app.post('/api/user/create', response_model=models.UserRead, status_code=status.HTTP_201_CREATED)
 def CreateUser(user: models.UserCreate, session: Session = Depends(get_session)):
@@ -38,12 +68,20 @@ def CreateUser(user: models.UserCreate, session: Session = Depends(get_session))
     session.refresh(db_user)
     return db_user
 
-@app.get('api/user/{user_id}', status_code=status.HTTP_200_OK)
+@app.get('/api/chat/{chat_id}', response_model=models.ChatRead, status_code=status.HTTP_200_OK)
+def GetChat(chat_id: int, session: Session = Depends(get_session)):
+    chat = session.get(models.Chat, chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found.")
+    return chat
+
+@app.get('/api/user/{user_id}', status_code=status.HTTP_200_OK)
 def getUserName(user_id: int, session: Session = Depends(get_session)):
-    user_name = session.get(models.User.name, user_id)
-    if not user_name:
-        raise HTTPException(status_code=404, detail="User name not found.")
-    return {"user_name": user_name}
+    user = session.get(models.User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    return {"user_name": user.name}
 
 @app.post('/api/chat/create', response_model=models.ChatRead, status_code=status.HTTP_201_CREATED)
 def CreateChat(chat: models.ChatCreate, session: Session = Depends(get_session)):
@@ -85,12 +123,20 @@ def ChatJoin(chat_data: models.ChatJoin, session: Session = Depends(get_session)
     return chat
 
 @app.delete('/api/chat/{chat_id}', status_code=status.HTTP_204_NO_CONTENT)
-def DeleteChat(chat_id: int, session: Session = Depends(get_session)):
+def DeleteChat(chat_id: int, user_id: int, session: Session = Depends(get_session)):
     chat = session.get(models.Chat, chat_id)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat already deleted.")
         
+    if chat.host_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this chat")
+    
     session.delete(chat)
+    
+    user = session.get(models.User, user_id)
+    if user:
+        session.delete(user)
+    
     session.commit()
     return None
 

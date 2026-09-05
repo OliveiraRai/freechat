@@ -25,14 +25,14 @@ export function CreateChat() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          host_id: userId,
+          host_id: Number(userId),
         }),
       });
       if (!response.ok) throw new Error("Error while creating chat.");
 
       const data = await response.json();
 
-      sessionStorage.setItem("chat_id", data.id);
+      sessionStorage.setItem("chat_id", data.id || data.chat_id);
       sessionStorage.setItem("chat_code", data.code);
 
       navigate(`/chat`);
