@@ -5,7 +5,8 @@ from utils import generate_unique_code
 
 # motivo de usar SQLModel é porque BaseModel não suporta table=True
 class BaseUser(SQLModel):
-    name: str = Field(unique=True)
+    # 1. ALTERADO APENAS AQUI: Removido o 'unique=True' daqui, pois classes base de rota não aceitam essa restrição no SQLModel
+    name: str 
 
 # input; vai no corpo do post
 class UserCreate(BaseUser):
@@ -19,6 +20,9 @@ class UserRead(BaseUser):
 class User(BaseUser, table=True):
     # basicamente um codinome
     __tablename__ = "users"
+    
+    name: str = Field(sa_column=sa.Column(sa.String, unique=True, nullable=False))
+    
     # sa.column=sa.Column... 'blinda' código contra bug de compatibilidade entre sqlmodel e pydantic
     id: Optional[int] = Field(default=None, sa_column=sa.Column(sa.Integer, primary_key=True))
     
