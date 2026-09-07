@@ -4,5 +4,4 @@ pydantic
 sqlmodel
 sqlalchemy.orm
 sqlalchemy
-sqlite3
 websockets
