@@ -148,12 +148,12 @@ def DeleteChat(chat_id: int, user_id: int, session: Session = Depends(get_sessio
     user = session.get(models.User, user_id)
     if user:
         session.delete(user)
-    try:
+        
+    if not session.get(models.User, chat.guest_id):
+        pass
+    else:
         guest = session.get(models.User, chat.guest_id)
-        if guest:
-            session.delete(guest)  
-    except TypeError or AttributeError:
-        print("Error while deleting guest data.")
+        session.delete(guest)
         
     
     session.commit()
