@@ -15,7 +15,7 @@ export function JoinChat() {
     if (!chatCode.trim()) return;
 
     try {
-      const response = await fetch(`/api/chat/join`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/join`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

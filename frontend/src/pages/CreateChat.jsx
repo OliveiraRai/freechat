@@ -19,7 +19,7 @@ export function CreateChat() {
   const handleCreateChat = async () => {
     if (!userId) return;
     try {
-      const response = await fetch("/api/chat/create", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
