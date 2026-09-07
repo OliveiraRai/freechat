@@ -54,7 +54,7 @@ export function ChatBody() {
     ) {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
-      const wsHost = `${window.location.hostname}:8000`;
+      const wsHost = `freechat-b8ei.onrender.com`;
 
       const ws = new WebSocket(
         `${protocol}//${wsHost}/ws/chat/${chat_id}?userId=${user_id}`,
