@@ -84,7 +84,7 @@ export function ChatBody() {
 
     async function getName(currentUserId) {
       try {
-        const response = await fetch(`/api/user/${currentUserId}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/${currentUserId}`);
         if (!response.ok) return;
         const data = await response.json();
         setUserName(data.user_name || data.name);
@@ -96,7 +96,7 @@ export function ChatBody() {
     async function checkChatStatus(currentChatId) {
       if (!currentChatId) return;
       try {
-        const response = await fetch(`/api/chat/${chat_id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/${chat_id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -142,7 +142,7 @@ export function ChatBody() {
 
   const handleChatDelete = async () => {
     try {
-      const response = await fetch(`/api/chat/${chatId}?user_id=${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/${chatId}?user_id=${userId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
