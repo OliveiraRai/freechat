@@ -1,9 +1,3 @@
-import os
-
-if os.path.exists("freechat.db"):
-    os.remove("freechat.db")
-    print("Banco freechat.db antigo deletado com sucesso do Render!")
-
 import models
 from fastapi import FastAPI, Depends, status, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
