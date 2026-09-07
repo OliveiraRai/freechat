@@ -12,6 +12,7 @@ export function ChatBody() {
   const [connected, setConnected] = useState(false);
   const [message, setMessage] = useState("");
   const [hasGuest, setHasGuest] = useState(false);
+  const [isGuest, setIsguest] = useState(false);
 
   const [messages, setMessages] = useState([]);
   const socketRef = useRef(null);
@@ -20,9 +21,9 @@ export function ChatBody() {
     const chat_id = sessionStorage.getItem("chat_id");
     const chat_code = sessionStorage.getItem("chat_code");
     const user_id = sessionStorage.getItem("user_id");
+    const guest_id = sessionStorage.getItem("guest_id");
 
     if (!chat_id || !user_id) {
-      console.log("Erro: dados de chat e usuário ausentes");
       navigate("/");
       return;
     }
@@ -30,6 +31,10 @@ export function ChatBody() {
     setChatId(chat_id);
     setUserId(user_id);
     getName(user_id);
+
+    if (guest_id == user_id) {
+      setIsguest(true);
+    }
 
     if (chat_code) {
       setChatCode(chat_code);
@@ -41,7 +46,6 @@ export function ChatBody() {
           isSystem: true,
         },
       ]);
-      console.log(`[HOST] Código para convidar o guest: ${chat_code}`);
     }
 
     if (
@@ -49,26 +53,30 @@ export function ChatBody() {
       socketRef.current.readyState === WebSocket.CLOSED
     ) {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const host = window.location.host;
+
+      const wsHost = `${window.location.hostname}:8000`;
 
       const ws = new WebSocket(
-        `${protocol}//${host}/ws/chat/${chat_id}?userId=${user_id}`,
+        `${protocol}//${wsHost}/ws/chat/${chat_id}?userId=${user_id}`,
       );
 
       ws.onopen = () => {
         setConnected(true);
-        console.log("Websocket conectado com sucesso.");
       };
 
       ws.onmessage = (event) => {
         const incomingMessage = JSON.parse(event.data);
         setMessages((prev) => [...prev, incomingMessage]);
-        checkChatStatus();
+        checkChatStatus(chat_id);
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         setConnected(false);
-        console.log("Websocket desconectado.");
+
+        if (event.code !== 1005 && event.code !== 1006) {
+          sessionStorage.clear();
+          navigate("/");
+        }
       };
 
       socketRef.current = ws;
@@ -81,11 +89,12 @@ export function ChatBody() {
         const data = await response.json();
         setUserName(data.user_name || data.name);
       } catch (err) {
-        console.log("Erro ao buscar nome do usuário: ", err);
+        // Erro omitido intencionalmente
       }
     }
 
-    async function checkChatStatus() {
+    async function checkChatStatus(currentChatId) {
+      if (!currentChatId) return;
       try {
         const response = await fetch(`/api/chat/${chat_id}`, {
           method: "GET",
@@ -93,19 +102,26 @@ export function ChatBody() {
             "Content-Type": "application/json",
           },
         });
-        if (!response.ok) return;
-        const chat = await response.json();
 
+        if (!response.ok) {
+          clearInterval(intervalId); 
+          if (socketRef.current) socketRef.current.close(); 
+          sessionStorage.clear();
+          navigate("/");
+          return;
+        }
+
+        const chat = await response.json();
         if (chat.guest_id !== null) {
           setHasGuest(true);
         }
       } catch (err) {
-        console.log("Erro ao verificar status do chat: ", err);
+        // Erro omitido intencionalmente
       }
     }
 
-    checkChatStatus();
-    const intervalId = setInterval(checkChatStatus, 3000);
+    checkChatStatus(chat_id);
+    const intervalId = setInterval(() => checkChatStatus(chat_id), 3000);
 
     return () => {
       clearInterval(intervalId);
@@ -134,18 +150,13 @@ export function ChatBody() {
       });
 
       if (response.ok) {
-        console.log("Chat excluído com sucesso.");
         sessionStorage.clear();
         navigate("/");
       } else {
-        const data = await response.json().catch(() => ({}));
-        console.error(
-          "Erro ao deletar chat:",
-          data.detail || response.statusText,
-        );
+        await response.json().catch(() => ({}));
       }
     } catch (err) {
-      console.error("Erro de conexão ao deletar chat:", err);
+      // Erro omitido intencionalmente
     }
   };
 
@@ -159,7 +170,6 @@ export function ChatBody() {
       timestamp: new Date().toISOString(),
     };
 
-    // Apenas envia via WebSocket (o ws.onmessage cuidará de renderizar no estado)
     socketRef.current.send(JSON.stringify(payload));
     setMessage("");
   };
@@ -168,8 +178,9 @@ export function ChatBody() {
     <div className="bg-primary h-screen overflow-hidden">
       <TopBar
         connected={connected}
-        userName={hasGuest ? userName : "Waiting for guest."}
+        userName={hasGuest ? "Connected" : "Waiting for guest."}
         onDelete={handleChatDelete}
+        isGuest={isGuest}
       />
       <div className="flex justify-center px-4">
         <div className="w-full max-w-2xl h-[calc(100vh-40px)] flex flex-col justify-between">

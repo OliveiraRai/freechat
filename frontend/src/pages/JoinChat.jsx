@@ -39,6 +39,7 @@ export function JoinChat() {
 
       const chatId = data.chat_id || data.id;
       sessionStorage.setItem("chat_id", chatId);
+      sessionStorage.setItem("guest_id", sessionStorage.getItem('user_id'));
 
       navigate("/chat");
     } catch (err) {

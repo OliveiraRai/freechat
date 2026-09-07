@@ -127,6 +127,7 @@ def DeleteChat(chat_id: int, user_id: int, session: Session = Depends(get_sessio
     chat = session.get(models.Chat, chat_id)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat already deleted.")
+    
         
     if chat.host_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this chat")
@@ -136,6 +137,10 @@ def DeleteChat(chat_id: int, user_id: int, session: Session = Depends(get_sessio
     user = session.get(models.User, user_id)
     if user:
         session.delete(user)
+    guest = session.get(models.User, chat.guest_id)
+    if guest:
+        session.delete(guest)  
+        
     
     session.commit()
     return None
